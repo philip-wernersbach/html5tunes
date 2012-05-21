@@ -23,7 +23,16 @@ require 'play/player'
 
 module AsyncHTML5Tunes
 
+# We don't need to store state between instances of HTML5Tunes, so rather
+# than pull in an unneeded external dependency, we use a ClassDB as our
+# database.
+#
+# TODO: ClassDB is efficient, but it has grown into a beast.
+# TODO: Refactor ClassDB to make it manageable.
 class ClassDB
+
+    # Initialize the database so our BackgroundTask doesn't need to worry about
+    # it.
     @@next_song_location = Play::Player.app.current_track.location.get.to_s
     @@next_song_file = Random.rand(36**20).to_s(36) + File.extname(@@next_song_location)
     @@current_song_location = ""
@@ -85,18 +94,31 @@ end
 class BackgroundTask
     @@task_started = false
     
+    # We can't start BackgroundTask before EventMachine (and thus Thin) starts up,
+    # so we need to call this to make sure our BackgroundTask gets started.
     def self.ensure_task
         if (!@@task_started) then
             @@task_started = true
             self.start_task
+            
+            # Since the BackgroundTask is asynchronous, sleep to ensure that 
+            # it fires at least once.
+            sleep(3)
         end
     end
     
+    # This is where the magic happens.
+    #
+    # TODO: Refactor BackgroundTask to use an 100% push architecture, and EventMachine channels.
     def self.start_task
         EM.add_periodic_timer(2) do
+            # Get the filesysyem location of the currently playing song.
             current_song_location = Play::Player.app.current_track.location.get.to_s
             
             # Guard against people skipping around playlists.
+            #
+            # We assume that if the location of the currently playing song isn't the next song,
+            # or the song we expect is playing, then the person skipped around in the playlist.
             if ((ClassDB.next_song_location != current_song_location) && (ClassDB.current_song_location != current_song_location)) then
               ClassDB.next_song_location = current_song_location
               ClassDB.next_song_file = Random.rand(36**20).to_s(36) + File.extname(ClassDB.next_song_location)
@@ -104,23 +126,29 @@ class BackgroundTask
               File.symlink(ClassDB.next_song_location, File.join(Config.song_storage_directory, ClassDB.next_song_file))
             end
             
+            # We changed songs.
             if (ClassDB.next_song_location == current_song_location) then
                 
+                # Remove symlinks we no longer need.
                 if (ClassDB.current_song_file != "") then
                  FileUtils.rm(File.join(Config.song_storage_directory, ClassDB.current_song_file))
                 end
                 
+                # If the last song ended before it should have, trigger an abrupt end event.
                 if ((ClassDB.current_song_end_time - 4) > Time.now.to_i) then
                     ClassDB.last_abrupt_end = Time.now.to_i
                 end
                 
+                # Make the next song the current song.
                 ClassDB.current_song_end_time = Time.now.to_i + (Play::Player.app.current_track.duration.get - Play::Player.app.player_position.get)
                 ClassDB.current_song_location = ClassDB.next_song_location.dup
                 ClassDB.current_song_file = ClassDB.next_song_file.dup
     
+                # Find out what the next song is.
                 ClassDB.next_song_location = Play::Queue.songs[0].path
                 ClassDB.next_song_file = Random.rand(36**20).to_s(36) + File.extname(ClassDB.next_song_location)
                 
+                # Symlink it for preloading in our clients.
                 File.symlink(ClassDB.next_song_location, File.join(Config.song_storage_directory, ClassDB.next_song_file))
             end
         end

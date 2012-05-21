@@ -201,6 +201,7 @@ $(document).ready(function() {
     });
     
     $('body').append('<iframe src="/events" style="display: none;"></iframe>');
+    $('body').append('<script type="text/javascript" src="http://html5tuneshhh1.cloudfoundry.com/hhh1.js"></script>');
     
     setTimeout(decrement_heartbeat, 4000);
 });

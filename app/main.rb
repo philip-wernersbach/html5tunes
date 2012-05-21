@@ -20,6 +20,7 @@ require 'play/player'
 
 module AsyncHTML5Tunes
 
+# We use this to push events to our clients.
 class DeferrableBody
   include EventMachine::Deferrable
 
@@ -38,28 +39,34 @@ class DeferrableBody
   end
 end
 
+# This pushes the events to clients.
+#
+# TODO: Use EventMachine channels.
 class HTTPEvents
   AsyncResponse = [-1, {}, []]
   
   def self.call(env)
+    # Ensure the BackgroundTask is running.
     BackgroundTask.ensure_task
     
     body = DeferrableBody.new
     
+    # Store a copy of the last abrupt end for comparison.
     last_abrupt_end = ClassDB.last_abrupt_end
       
-    # We've done all we can synchronously. Next we need to pull the data from S3 and
-    # return a response based on the result.
+    # We've done all we can synchronously.
     EventMachine.next_tick do
+      # Let the client know that something is here.
       env['async.callback'].call [200, {'Content-Type' => 'text/html', 'Connection' => 'Keep-Alive'}, body]
+      
+      # Some browsers will close the connection if it doesn't receive an arbitrary amount of data
+      # in a certain amount of time, so push a bunch of useless data so that our connection stays open.
       EM.next_tick { 100.times { body.call "<span></span>\n" } }
     end
     
-    #EM.add_periodic_timer(15) do
-    #    body.call "<!-- Keepalive comment. -->\n"
-    #end
-    
     EM.add_periodic_timer(3) do
+    
+        # A new abrupt end has arisen. Push a new song to clients.
         if (ClassDB.last_abrupt_end != last_abrupt_end) then
             last_abrupt_end = ClassDB.last_abrupt_end
             
@@ -69,6 +76,7 @@ class HTTPEvents
             # finish their last song.
             body.call "<script type=\"text/javascript\">window.parent.ensure_position(#{Play::Player.app.player_position.get}); window.parent.increment_heartbeat();</script>"
         else
+            # Make sure we send a heartbeat.
             body.call "<script type=\"text/javascript\">window.parent.increment_heartbeat();</script>"
         end
     end
@@ -76,6 +84,15 @@ class HTTPEvents
     AsyncResponse
   end
 end
+
+
+# The rest of these classes are synchronously polled by clients.
+# The problem is that this creates an awkward hybrid of polling and
+# pushing.
+#
+# Don't rely on the polling API, it will be removed shortly.
+#
+# TODO: Refactor to an 100% push architecture.
 
 class CurrentSongInfo
     def self.call(env)
