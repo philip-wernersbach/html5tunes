@@ -1,0 +1,1 @@
+Rack::Mime::MIME_TYPES['.m4a'] = 'audio/mp4'

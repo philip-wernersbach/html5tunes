@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<!--
+
+   Copyright 2012 Philip Wernersbach
+
+   Licensed under the Modified Apache License, Version 2.0.1 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://github.com/philip-wernersbach/modified-apache-license
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+-->
+
+<html>
+<head>
+    <title>*** HTML5Tunes ***</title>
+    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script type="text/javascript" src="/js/html5tunes.js"></script>
+</head>
+
+<body>
+
+    <h1>HTML5Tunes Player</h1>
+
+    <span id="info"></span>
+    <br />
+    <span id="play_pause_span">
+        |
+        <a href="/#" id="play">Play</a>
+        <a href="/#" id="pause" style="display: none;">Pause</a>
+    </span>
+    | <a href="/#" id="resync">Resync Audio</a> |
+    <br />
+    <br />
+    
+    <audio id="current_song" style="display: none;" src="" preload="auto" autobuffer="true" autoplay="false" controls="true">
+        <h1>Please upgrade to a browser that supports the audio tag to use HTMLTunes.</h1>
+    </audio>
+    
+</body>
+
+</html>
