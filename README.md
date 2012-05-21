@@ -22,7 +22,7 @@ Requirements
 
 1. Ruby 1.9
 2. Bundler
-3. OS X (We use communicate with iTunes through Applescript.)
+3. OS X (We communicate with iTunes through Applescript.)
 4. An HTML5 compatible browser.
 
 Installation & Running
@@ -45,7 +45,7 @@ $ ./run.sh
 Need a iTunes Control Interface?
 --------------------------------
 
-HTML5Tunes's sole purpose is to play iTunes songs in the browser. If you need to control iTunes from the web, I recommend [play][http://github.com/play/play], which
+HTML5Tunes's sole purpose is to play iTunes songs in the browser. If you need to control iTunes from the web, I recommend [play](http://github.com/play/play), which
 is also open source and written in Ruby. Since play controls iTunes through Applescript too, play and HTML5Tunes will work together.
 
 Caveats
